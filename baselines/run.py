@@ -1,6 +1,7 @@
 from .CoT.cot import cot
 from .reflexion.reflexion import reflexion
 from .CiT.cit import citTree
+from .MCTSr.mctsr import MCTSr
 
 def baselines(api, method, query, ans_format = "", **kwargs):
     if method == "CoT":
@@ -40,3 +41,6 @@ def baselines(api, method, query, ans_format = "", **kwargs):
                 return res, info
             else:
                 return None, info
+    if method == "MCTSr":
+        MCTSr(api = api)
+        return MCTSr.main_loop(query, max_iter = kwargs.get("iter", 10), ans_formay = ans_format)

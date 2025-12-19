@@ -14,7 +14,7 @@ def api(msgs):
         model = "qwen3-max",
         # model = "deepseek-v3",
         messages = msgs,
-        max_tokens = 1000,
+        max_tokens = 2000,
     )
     answer = res.choices[0].message.content
     if res.choices[0].finish_reason != "stop":
@@ -31,15 +31,15 @@ import json
 
 data, ans_format = read("AIME25")
 
-if False:
+if True:
     CoTs = []
     cnt = 0
     for i, x in enumerate(data):
         print("TEST",i)
-        res, info = baselines(api, "CiT", x["problem"], ans_format, tree_search_method = "tot", client = client)
+        res, info = baselines(api, "MCTSr", x["problem"], ans_format, iter = 10, client = client)
         CoTs.append(info)
         try:
-            ans = int(re.findall(r"\d+", res)[0])
+            ans = int(re.findall(r"\d+", res)[-1])
             if ans != x["answer"]:
                 print("WA:", res, "ANS:", x["answer"])
             else:
@@ -49,7 +49,7 @@ if False:
             print("WA:", res, "ANS:", x["answer"])
     print(cnt)
     
-    with open("cit_log.json", "w") as f:
+    with open("mctsr_log.json", "w") as f:
         json.dump(CoTs, f)
 else:
     trees = []
@@ -60,7 +60,7 @@ else:
         info["final_ans"] = res
         trees.append(info)
         try:
-            ans = int(re.findall(r"\d+", res)[0])
+            ans = int(re.findall(r"\d+", res)[-1])
             if ans == x["answer"]:
                 print("CORRECT")
                 cnt += 1
