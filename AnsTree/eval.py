@@ -2,37 +2,24 @@ def evaluate(
     api,
     query,
     answer_versions,
-    adversaries,
+    critics,
     refines,
+    mode : str = "critic_based",
 ) -> dict:
-    evals = {"adversary": 0, "answers": []}
-    sus = [x[x.find(':')+1:] for x in adversaries.split("weak link")[1:]]
-    for prev_adv in answer_versions[1::2]:
-        for x in prev_adv["ans"].split("weak link")[1:]:
-            sus.append(x[x.find(':') + 1:])
-        for bro in prev_adv["bros"]:
-            for x in bro.split("weak link")[1:]:
-                sus.append(x[x.find(':') + 1:])
-        
+    evals = []
     
     for ans in refines:
-        cnt = 0
-        for s in sus:
+        if mode == "llm_judge":
             res = api(
-                f"""For a question:
-{query}
-
-There is a solution:
-{ans}
-
-Check whether it matches the following suspicion:
-{s}
-
-Print \"YES\" if yes; or print \"NO\" if no."
-"""
-            )
-            if res.find("YES") != -1:
-                cnt += 1
-        evals["answers"].append(cnt)
+                f"For a question:\n{query}\n\nA solution is:\n{ans}\n\nIs it correct? Give a capital word \"YES\" or \"NO\"."
+            ).find("YES") != -1
+        elif mode == "critic_based":
+            critic = critics
+            if len(answer_versions) > 1:
+                critic = answer_versions[-2]["ans"] + "\n" + critic
+            res = api(
+                f"For a question:\n{query}\n\nPrevious solutions meets following suspicions:\n{critic}\n\nA new solution is:\n{ans}\n\nIs there any suspicion unsettled in the new answer? Give a capital word \"YES\" or \"NO\"."
+            ).find("NO") != -1
+        evals.append(1 if res else 0)
     
     return evals

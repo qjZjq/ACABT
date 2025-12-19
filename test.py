@@ -12,10 +12,14 @@ def api(msgs):
     res = client.chat.completions.create(
         # model = "gpt-4",
         model = "qwen3-max",
+        # model = "deepseek-v3",
         messages = msgs,
-        max_tokens = 2000,
+        max_tokens = 1000,
     )
-    return res.choices[0].message.content
+    answer = res.choices[0].message.content
+    if res.choices[0].finish_reason != "stop":
+        answer += "<truncated due to length limit>"
+    return answer
 
 
 from baselines.run import baselines
@@ -27,14 +31,15 @@ import json
 
 data, ans_format = read("AIME25")
 
-if True:
+if False:
     CoTs = []
     cnt = 0
-    for x in data:
-        res, info = baselines(api, "reflexion", x["problem"], ans_format, iter = 10)
+    for i, x in enumerate(data):
+        print("TEST",i)
+        res, info = baselines(api, "CiT", x["problem"], ans_format, tree_search_method = "tot", client = client)
         CoTs.append(info)
         try:
-            ans = int(res)
+            ans = int(re.findall(r"\d+", res)[0])
             if ans != x["answer"]:
                 print("WA:", res, "ANS:", x["answer"])
             else:
@@ -44,18 +49,26 @@ if True:
             print("WA:", res, "ANS:", x["answer"])
     print(cnt)
     
-    with open("reflexion_log.json", "w") as f:
+    with open("cit_log.json", "w") as f:
         json.dump(CoTs, f)
 else:
+    trees = []
     cnt = 0
-    for x in data:
-        res, info = run(api, x["query"], iter = 4, answer_format = ans_format)
-        options = re.findall(r"\[[A-Z]\]", res)
-        if options:
-            if options[0][1] == x["ans"]:
+    for i, x in enumerate(data):
+        print("TEST",i)
+        res, info = run(api, x["problem"], iter = 5, answer_format = ans_format, mode = "tree")
+        info["final_ans"] = res
+        trees.append(info)
+        try:
+            ans = int(re.findall(r"\d+", res)[0])
+            if ans == x["answer"]:
                 print("CORRECT")
+                cnt += 1
             else:
-                print("WA:", res, "ANS:", x["ans"])
-        else:
-            print("WA:", res, "ANS:", x["ans"])
+                print("WA:", res, "ANS:", x["answer"])
+        except:
+            print("WA:", res, "ANS:", x["answer"])
     print(cnt)
+    
+    with open("ACtree_log.json", "w") as f:
+        json.dump(trees, f)

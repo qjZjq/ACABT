@@ -18,19 +18,23 @@ def api(msgs):
     res = client.chat.completions.create(
         model = "qwen3-max",
         # model = "gpt-4",
+        # model = "deepseek-v3",
         # model = "deepseek-chat",
         messages = msgs
     )
     return res.choices[0].message.content
 
-query = "Find the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$"
+query = "Let ${\triangle ABC}$ be a right triangle with $\angle A = 90^\circ$ and $BC = 38.$ There exist points $K$ and $L$ inside the triangle such\[AK = AL = BK = CL = KL = 14.\]The area of the quadrilateral $BKLC$ can be expressed as $n\sqrt3$ for some positive integer $n.$ Find $n.$"
 
 thinking = api(query + "\nLet's think step by step.")
+
 ans0 = api([
     {"role": "user", "content": query + "\nLet's think step by step."},
     {"role": "assistant", "content": thinking},
     {"role": "user", "content": "Summarize your answer into a short solution:"},
 ])
+
+exit(0)
 adv = gen_adversary(api, query, ans0)
 ans1 = refine(api, query, ans0, adv, num = 1)[0]
 

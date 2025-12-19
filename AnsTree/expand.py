@@ -1,4 +1,4 @@
-def gen_adversary(
+def gen_critic(
     api,
     query : str,
     answer : str,

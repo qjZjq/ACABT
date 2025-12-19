@@ -8,7 +8,8 @@ class AlphaBetaTree:
     def __init__(
         self,
         max_childs : int = 3,
-        ucb_coeff : float = 0.5,
+        ucb_coeff : float = 0.3,
+        gamma : float = 0.9,
     ) -> None:
         self.max_childs = max_childs
         self.id = 0
@@ -17,27 +18,25 @@ class AlphaBetaTree:
         self.child = []
         self.v = []
         self.reward = []
+        self.score = []
         self.odd_depth = []
         
         self.c = ucb_coeff
+        self.gamma = gamma
         self.cnt = []
         
     def update(
         self,
         x : int,
     ) -> None:
-        if x == -1: return
+        if x == -1:
+            return
         
-        if self.child[x]:
-            if self.odd_depth:
-                m = min(self.v[c] for c in self.child[x])
-            else:
-                m = max(self.v[c] for c in self.child[x])
-                m = max(m, self.reward[x])
+        if self.odd_depth:
+            self.v[x] = 0.5 * (min(self.v[c] for c in self.child[x]) + sum(self.v[c] for c in self.child[x]) / len(self.child[x]))
         else:
-            m = self.reward[x]
-        
-        self.v[x] = m
+            self.v[x] = 0.5 * (max(self.v[c] for c in self.child[x]) + sum(self.v[c] for c in self.child[x]) / len(self.child[x]))
+            
         self.update(self.parent[x])
         
     def addnode(
@@ -48,20 +47,21 @@ class AlphaBetaTree:
     ) -> int:
         self.ans.append(ans)
         self.parent.append(parent)
-        self.v.append(0)
         self.reward.append(reward)
         self.child.append([])
         if parent != -1:
             self.odd_depth.append(not self.odd_depth[parent])
+            self.score.append(self.score[parent] * self.gamma + reward)
             self.child[parent].append(self.id)
             self.cnt[parent] += 1
         else:
             self.odd_depth.append(False)
+            self.score.append(reward)
+        self.v.append(self.score[-1])
             
         self.cnt.append(1)
         self.id += 1
         
-        self.update(self.id - 1)
         return self.id - 1
         
     def set_root(
@@ -93,6 +93,20 @@ class AlphaBetaTree:
         self,
     ) -> str:
         selected_from = [x for x in range(self.id) if not self.odd_depth[x]]
-        res = min(selected_from, key = lambda x: self.reward[x])
+        res = min(selected_from, key = lambda x: self.score[x])
         return self.ans[res]
         
+    def to_dict(self):
+        return {
+            "parent": self.parent,
+            "child": self.child,
+            "ans": self.ans,
+            "reward": self.reward,
+            "score": self.score,
+            "v": self.v,
+            "configs": {
+                "max_childs": self.max_childs,
+                "gamma": self.gamma,
+                "c": self.c,
+            },
+        }
